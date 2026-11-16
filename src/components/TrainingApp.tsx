@@ -132,13 +132,15 @@ export function TrainingApp() {
 
         <div className="flex flex-col items-center gap-3">
           <Controls status={timer.status} onStart={handleStart} onPause={timer.pause} onResume={timer.resume} onStop={handleStop} />
-          {timer.status === "paused" && <p className="animate-pulse text-amber-300">En pausa</p>}
-          {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-300">Modo prueba ×{timer.speed}</p>}
+          <div className="flex h-6 items-center gap-3 text-sm">
+            {timer.status === "paused" && <p className="animate-pulse font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-300">En pausa</p>}
+            {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-300">Modo prueba ×{timer.speed}</p>}
+          </div>
         </div>
       </main>
 
       {toast && (
-        <div className="fixed inset-x-4 top-20 z-30 rounded-xl bg-zinc-800 p-3 text-center text-sm shadow-xl" role="status">
+        <div className="fixed inset-x-3 top-[max(env(safe-area-inset-top),0.5rem)] z-30 rounded-2xl border border-fg/10 bg-surface/95 p-3 text-center text-sm shadow-xl backdrop-blur" role="status">
           {toast}
         </div>
       )}

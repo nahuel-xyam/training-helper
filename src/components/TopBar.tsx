@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { MdEdit, MdLightMode, MdNotificationsActive, MdNotificationsOff, MdVibration, MdVolumeOff, MdVolumeUp } from "react-icons/md";
+import { MdEdit, MdNotificationsActive, MdNotificationsOff, MdStayCurrentPortrait, MdVibration, MdVolumeOff, MdVolumeUp } from "react-icons/md";
 import type { IconType } from "react-icons";
+import { DayNightToggle } from "./DayNightToggle";
 
 type ToggleProps = {
   on: boolean;
@@ -23,12 +24,16 @@ function Toggle({ on, onClick, label, IconOn, IconOff, disabled }: ToggleProps) 
       aria-pressed={on}
       aria-label={`${label}: ${on ? "activado" : "desactivado"}`}
       title={`${label}: ${on ? "activado" : "desactivado"}`}
-      className={`relative flex h-11 w-11 items-center justify-center rounded-full border transition-colors disabled:opacity-30 ${
-        on ? "border-white/20 bg-white/15 text-white" : "border-white/10 bg-transparent text-white/40"
+      className={`relative flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-300 active:scale-90 disabled:opacity-25 ${
+        on
+          ? // claro: naranja claro con ícono blanco · oscuro: verde translúcido con glow
+            "border-orange-500/20 bg-orange-400 text-white shadow-[0_6px_16px_-6px_rgba(249,115,22,0.7)] " +
+            "dark:border-green-400/40 dark:bg-green-400/10 dark:text-green-300 dark:shadow-[0_0_18px_-4px_rgba(74,222,128,0.6),inset_0_1px_0_rgba(255,255,255,0.12)]"
+          : "border-fg/10 bg-fg/[0.04] text-fg/35"
       }`}
     >
       <Icon size={22} />
-      {!on && !IconOff && <span className="absolute h-0.5 w-7 rotate-45 rounded bg-white/50" />}
+      {!on && !IconOff && <span className="absolute h-0.5 w-7 rotate-45 rounded bg-fg/40" />}
     </button>
   );
 }
@@ -47,24 +52,30 @@ type Props = {
   onToggleWakeLock: () => void;
 };
 
+const squareBtn =
+  "flex h-11 w-11 items-center justify-center rounded-2xl border border-fg/15 bg-fg/[0.06] text-fg/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-transform active:scale-90";
+
 export function TopBar(p: Props) {
   return (
     <header className="flex items-center justify-between gap-2 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2">
-      <div className="flex gap-2">
+      <div className="flex gap-1.5">
         <Toggle on={p.notificationsOn} onClick={p.onToggleNotifications} label="Notificaciones" IconOn={MdNotificationsActive} IconOff={MdNotificationsOff} />
         <Toggle on={p.soundOn} onClick={p.onToggleSound} label="Sonido" IconOn={MdVolumeUp} IconOff={MdVolumeOff} />
         <Toggle on={p.vibrationOn && p.canVibrate} onClick={p.onToggleVibration} label="Vibración" IconOn={MdVibration} disabled={!p.canVibrate} />
-        <Toggle on={p.wakeLockOn && p.canWakeLock} onClick={p.onToggleWakeLock} label="Pantalla siempre encendida" IconOn={MdLightMode} disabled={!p.canWakeLock} />
+        <Toggle on={p.wakeLockOn && p.canWakeLock} onClick={p.onToggleWakeLock} label="Pantalla siempre encendida" IconOn={MdStayCurrentPortrait} disabled={!p.canWakeLock} />
       </div>
-      {p.editorDisabled ? (
-        <span className="flex h-11 w-11 items-center justify-center rounded-full text-white/20" title="Pará el entrenamiento para editar">
-          <MdEdit size={22} />
-        </span>
-      ) : (
-        <Link href="/editor/" aria-label="Editar entrenamiento" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white/80">
-          <MdEdit size={22} />
-        </Link>
-      )}
+      <div className="flex items-center gap-1.5">
+        <DayNightToggle />
+        {p.editorDisabled ? (
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-fg/5 text-fg/15" title="Pará el entrenamiento para editar">
+            <MdEdit size={22} />
+          </span>
+        ) : (
+          <Link href="/editor/" aria-label="Editar entrenamiento" className={squareBtn}>
+            <MdEdit size={22} />
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

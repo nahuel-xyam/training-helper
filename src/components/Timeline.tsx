@@ -12,7 +12,7 @@ export function Timeline({ timeline, index, total }: { timeline: TimelineStage[]
         return (
           <div
             key={t.index}
-            className={`rounded-sm transition-opacity ${active ? "ring-2 ring-white" : ""}`}
+            className={`rounded-sm transition-opacity ${active ? "ring-2 ring-fg" : ""}`}
             style={{
               flexGrow: t.stage.durationSec,
               flexBasis: 0,

@@ -17,14 +17,14 @@ export function InstallBanner() {
   };
 
   return (
-    <div className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-20 flex items-center gap-3 rounded-2xl border border-white/15 bg-zinc-800/95 p-3 shadow-xl backdrop-blur">
+    <div className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-20 flex items-center gap-3 rounded-2xl border border-fg/15 bg-surface/95 p-3 shadow-xl backdrop-blur">
       <MdInstallMobile size={28} className="shrink-0 text-green-400" />
       <div className="flex-1 text-sm">
         <p className="font-semibold">Instalá la app</p>
         {canPrompt ? (
-          <p className="text-white/60">Usala como app y recibí avisos aunque estés en otra cosa.</p>
+          <p className="text-fg/60">Usala como app y recibí avisos aunque estés en otra cosa.</p>
         ) : (
-          <p className="text-white/60">
+          <p className="text-fg/60">
             Tocá <MdIosShare className="inline align-text-bottom" /> Compartir → <b>Agregar a inicio</b>. En iPhone las notificaciones solo funcionan instalada.
           </p>
         )}
@@ -34,7 +34,7 @@ export function InstallBanner() {
           Instalar
         </button>
       )}
-      <button type="button" onClick={close} aria-label="Cerrar" className="p-1 text-white/50">
+      <button type="button" onClick={close} aria-label="Cerrar" className="p-1 text-fg/50">
         <MdClose size={20} />
       </button>
     </div>

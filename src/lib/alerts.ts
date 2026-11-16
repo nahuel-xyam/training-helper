@@ -78,7 +78,7 @@ export async function notify(title: string, body: string) {
     tag: "training-stage",
     renotify: true,
     icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`,
-    badge: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`,
+    badge: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/badge-96.png`,
     vibrate: [300, 100, 300],
   } as NotificationOptions;
   try {

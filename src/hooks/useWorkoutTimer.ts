@@ -51,12 +51,18 @@ export function useWorkoutTimer(workout: Workout, callbacks: Callbacks = {}) {
     setRun(r);
   }, []);
 
-  // Tick mientras corre (también detecta el final)
+  // Tick mientras corre (también detecta el final).
+  // requestAnimationFrame para que las centésimas se vean fluidas con la pestaña visible;
+  // setInterval como respaldo cuando la pestaña está en segundo plano (rAF se pausa).
   useEffect(() => {
     if (!run || run.status !== "running") return;
+    let done = false;
+    let raf = 0;
     const tick = () => {
+      if (done) return;
       const t = Date.now();
       if (elapsedOf(run, t) >= total) {
+        done = true;
         lastIndexRef.current = null;
         persist(null);
         setFinished(true);
@@ -65,9 +71,16 @@ export function useWorkoutTimer(workout: Workout, callbacks: Callbacks = {}) {
       }
       setNow(t);
     };
-    const id = window.setInterval(tick, 200);
+    const frame = () => {
+      tick();
+      if (!done) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    const id = window.setInterval(tick, 250);
     document.addEventListener("visibilitychange", tick);
     return () => {
+      done = true;
+      cancelAnimationFrame(raf);
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", tick);
     };

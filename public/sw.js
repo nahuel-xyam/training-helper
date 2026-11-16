@@ -1,5 +1,5 @@
 // Service worker mínimo: cache offline (network-first) + click en notificaciones.
-const CACHE = "training-helper-v1";
+const CACHE = "training-helper-v2";
 const SCOPE = self.registration.scope; // ej: https://user.github.io/training-helper/
 
 self.addEventListener("install", (event) => {

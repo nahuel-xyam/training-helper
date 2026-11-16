@@ -32,9 +32,9 @@ export function NumberField({ value, onChange, min = 0, max = 999, decimal, labe
   };
 
   return (
-    <label className={`flex flex-col gap-1 text-xs text-white/50 ${className}`}>
+    <label className={`flex flex-col gap-1 text-xs text-fg/50 ${className}`}>
       {label}
-      <span className="flex items-center rounded-lg border border-white/10 bg-black/30 focus-within:border-white/40">
+      <span className="flex items-center rounded-lg border border-fg/10 bg-well focus-within:border-fg/40">
         <input
           type="text"
           inputMode={decimal ? "decimal" : "numeric"}
@@ -44,9 +44,9 @@ export function NumberField({ value, onChange, min = 0, max = 999, decimal, labe
             commit(e.target.value);
           }}
           onBlur={() => setText(String(lastValue).replace(".", decimal ? "," : "."))}
-          className="w-full min-w-0 bg-transparent px-2 py-2 text-base text-white outline-none"
+          className="w-full min-w-0 bg-transparent px-2 py-2 text-base text-fg outline-none"
         />
-        {suffix && <span className="pr-2 text-white/40">{suffix}</span>}
+        {suffix && <span className="pr-2 text-fg/40">{suffix}</span>}
       </span>
     </label>
   );
