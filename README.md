@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Training Helper
 
-## Getting Started
+Cronómetro de ciclos de entrenamiento (PWA, mobile-first). Marca la etapa actual y avisa en cada cambio con notificación web, beep, vibración y cuenta regresiva 3‑2‑1.
 
-First, run the development server:
+**Entrenamiento standard (30 min):**
+
+| Etapa | Duración | Velocidad |
+|---|---|---|
+| Calentamiento | 5 min | 3.5–4 km/h |
+| 4 × Rápido | 3 min | 5.5–6 km/h |
+| 4 × Recuperación | 2 min | 4–4.5 km/h |
+| Enfriamiento | 5 min | 3–3.5 km/h |
+
+Se puede editar desde el lápiz (se guarda en el `localStorage` del navegador) y volver al standard en cualquier momento.
+
+## Desarrollo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # http://localhost:3000
+pnpm build      # export estático en ./out (con basePath /training-helper)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Modo prueba: agregá `?speed=30` a la URL para que el entrenamiento corra 30× más rápido.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Cada push a `main` publica en GitHub Pages vía `.github/workflows/deploy.yml`.
+Configuración única: **Settings → Pages → Source: GitHub Actions**.
 
-## Learn More
+## Notas
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Las notificaciones en iPhone solo funcionan con la app instalada (Compartir → Agregar a inicio, iOS 16.4+).
+- No hay servidor de push: si el sistema congela la pestaña (pantalla bloqueada), los avisos pueden demorarse. Por eso existe el toggle "pantalla siempre encendida" (Wake Lock).
