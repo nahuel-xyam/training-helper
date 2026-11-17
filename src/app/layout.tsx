@@ -12,7 +12,7 @@ const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const metadata: Metadata = {
   title: "Training Helper",
   description: "Cronómetro de ciclos de entrenamiento con avisos por etapa",
-  appleWebApp: { capable: true, title: "Training", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Training Helper", statusBarStyle: "black-translucent" },
   icons: { apple: `${base}/icons/apple-touch-icon.png` },
 };
 

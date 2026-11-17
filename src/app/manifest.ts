@@ -6,7 +6,7 @@ const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Training Helper",
-    short_name: "Training",
+    short_name: "Training Helper",
     description: "Cronómetro de ciclos de entrenamiento",
     start_url: `${base}/`,
     scope: `${base}/`,
