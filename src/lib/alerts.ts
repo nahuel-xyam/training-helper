@@ -75,7 +75,7 @@ export async function notify(title: string, body: string) {
   if (!notificationsSupported() || Notification.permission !== "granted") return;
   const options = {
     body,
-    tag: "training-stage",
+    tag: "th-local",
     renotify: true,
     icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`,
     badge: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/badge-96.png`,

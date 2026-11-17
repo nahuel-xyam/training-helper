@@ -26,6 +26,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+        env:
+          NEXT_PUBLIC_ONESIGNAL_APP_ID: 386ec365-5a11-4231-9b18-c88a926aa163
+          NEXT_PUBLIC_ONESIGNAL_REST_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

@@ -21,8 +21,9 @@ import {
   unlockAudio,
   vibrate,
 } from "@/lib/alerts";
+import { cancelScheduledPush, clearScheduledPush, hasScheduledPush, pushEnabled, schedulePush, type PushItem } from "@/lib/push";
 import { loadWorkout } from "@/lib/storage";
-import { formatSpeed, formatTime, KIND_STYLES } from "@/lib/workout";
+import { formatSpeed, formatTime, KIND_STYLES, type TimelineStage } from "@/lib/workout";
 
 function readSpeedParam(): number {
   const v = Number(new URLSearchParams(window.location.search).get("speed"));
@@ -36,6 +37,8 @@ export function TrainingApp() {
     notificationsSupported() ? Notification.permission : "unsupported"
   );
   const [toast, setToast] = useState<string | null>(null);
+  // Hay notificaciones push (OneSignal) programadas: entonces no mostramos las locales para no duplicar.
+  const [pushActive, setPushActive] = useState(hasScheduledPush);
 
   const notificationsOn = settings.notifications && permission === "granted";
   const vibrationAvailable = canVibrate();
@@ -46,14 +49,15 @@ export function TrainingApp() {
     window.setTimeout(() => setToast(null), 3500);
   };
 
+  const stageTitle = (t: TimelineStage) => `${t.cycle ? `Ciclo ${t.cycle}/${workout.cycles} · ` : ""}${t.stage.name}`;
+  const stageBody = (t: TimelineStage) => `${formatSpeed(t.stage)} durante ${formatTime(t.stage.durationSec)}`;
+  const localNotifications = notificationsOn && !pushActive;
+
   const timer = useWorkoutTimer(workout, {
     onStageChange: (t) => {
       if (settings.sound) stageBeep();
       if (settings.vibration) vibrate([400, 150, 400]);
-      if (notificationsOn) {
-        const prefix = t.cycle ? `Ciclo ${t.cycle}/${workout.cycles} · ` : "";
-        void notify(`${prefix}${t.stage.name}`, `${formatSpeed(t.stage)} durante ${formatTime(t.stage.durationSec)}`);
-      }
+      if (localNotifications) void notify(stageTitle(t), stageBody(t));
     },
     onCountdown: () => {
       if (settings.sound) countdownBeep();
@@ -62,7 +66,9 @@ export function TrainingApp() {
     onFinish: (total) => {
       if (settings.sound) finishBeep();
       if (settings.vibration) vibrate([300, 100, 300, 100, 600]);
-      if (notificationsOn) void notify("¡Entrenamiento terminado! 🎉", `Tiempo total ${formatTime(total)}`);
+      if (localNotifications) void notify("¡Entrenamiento terminado! 🎉", `Tiempo total ${formatTime(total)}`);
+      clearScheduledPush();
+      setPushActive(false);
     },
   });
 
@@ -77,24 +83,63 @@ export function TrainingApp() {
     return result === "granted";
   };
 
+  /**
+   * Programa en OneSignal los avisos que faltan, para que lleguen aunque la app esté en segundo plano.
+   * `anchorMs` es el instante (Date.now) que corresponde a `fromElapsed` segundos de entrenamiento.
+   */
+  const schedulePushFrom = async (anchorMs: number, fromElapsed: number, speed: number) => {
+    if (!pushEnabled()) return;
+    const at = (sec: number) => anchorMs + ((sec - fromElapsed) / speed) * 1000;
+    const items: PushItem[] = timer.timeline
+      .filter((t) => t.startSec > fromElapsed)
+      .map((t) => ({ at: at(t.startSec), title: stageTitle(t), body: stageBody(t) }));
+    items.push({ at: at(timer.total), title: "¡Entrenamiento terminado! 🎉", body: `Tiempo total ${formatTime(timer.total)}` });
+    setPushActive(await schedulePush(items));
+  };
+
+  const cancelPush = () => {
+    setPushActive(false);
+    void cancelScheduledPush();
+  };
+
   const toggleNotifications = async () => {
     if (notificationsOn) {
       update({ notifications: false });
+      cancelPush();
       return;
     }
     const ok = await askPermission();
     update({ notifications: ok });
+    if (ok && timer.status === "running") await schedulePushFrom(Date.now(), timer.elapsed, timer.speed);
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     unlockAudio();
+    const speed = readSpeedParam();
+    const startedAt = Date.now();
+    timer.start(speed);
     // Pedimos permiso aprovechando el gesto del usuario (por default está activado).
-    if (settings.notifications && permission === "default") void askPermission();
-    timer.start(readSpeedParam());
+    let granted = permission === "granted";
+    if (settings.notifications && permission === "default") granted = await askPermission();
+    if (settings.notifications && granted) await schedulePushFrom(startedAt, 0, speed);
+  };
+
+  const handlePause = () => {
+    timer.pause();
+    cancelPush();
+  };
+
+  const handleResume = () => {
+    const resumedAt = Date.now();
+    const elapsed = timer.elapsed;
+    timer.resume();
+    if (notificationsOn) void schedulePushFrom(resumedAt, elapsed, timer.speed);
   };
 
   const handleStop = () => {
-    if (window.confirm("¿Terminar el entrenamiento?")) timer.stop();
+    if (!window.confirm("¿Terminar el entrenamiento?")) return;
+    timer.stop();
+    cancelPush();
   };
 
   const bg = timer.current ? KIND_STYLES[timer.current.stage.kind].bg : "transparent";
@@ -131,7 +176,7 @@ export function TrainingApp() {
         <BigClock elapsed={timer.elapsed} total={timer.total} />
 
         <div className="flex flex-col items-center gap-3">
-          <Controls status={timer.status} onStart={handleStart} onPause={timer.pause} onResume={timer.resume} onStop={handleStop} />
+          <Controls status={timer.status} onStart={() => void handleStart()} onPause={handlePause} onResume={handleResume} onStop={handleStop} />
           <div className="flex h-6 items-center gap-3 text-sm">
             {timer.status === "paused" && <p className="animate-pulse font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-300">En pausa</p>}
             {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-300">Modo prueba ×{timer.speed}</p>}

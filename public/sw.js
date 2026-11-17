@@ -1,5 +1,11 @@
-// Service worker mínimo: cache offline (network-first) + click en notificaciones.
-const CACHE = "training-helper-v2";
+// Service worker: cache offline (network-first), click en notificaciones locales y Web Push de OneSignal.
+try {
+  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+} catch {
+  // sin conexión o CDN caído: sigue funcionando el resto
+}
+
+const CACHE = "training-helper-v3";
 const SCOPE = self.registration.scope; // ej: https://user.github.io/training-helper/
 
 self.addEventListener("install", (event) => {
@@ -30,7 +36,9 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// Solo las notificaciones locales de la app; las de OneSignal las maneja su propio SW.
 self.addEventListener("notificationclick", (event) => {
+  if (event.notification.tag !== "th-local") return;
   event.notification.close();
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
