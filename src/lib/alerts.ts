@@ -2,8 +2,27 @@
 
 let audioCtx: AudioContext | null = null;
 
+/**
+ * Con la app en segundo plano (p.ej. mirando YouTube con la ventana flotante) no hacemos sonar nada:
+ * si la página reproduce audio, Android le da el "foco de audio" a Chrome y YouTube se pausa.
+ * Ahí avisan la notificación (Android solo baja el volumen un momento) y la vibración.
+ */
+function inBackground(): boolean {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
+}
+
+if (typeof document !== "undefined") {
+  // Al irse a segundo plano soltamos el audio para no quedarnos con el foco.
+  document.addEventListener("visibilitychange", () => {
+    if (!audioCtx) return;
+    if (inBackground()) void audioCtx.suspend().catch(() => {});
+    else void audioCtx.resume().catch(() => {});
+  });
+}
+
 /** Debe llamarse dentro de un gesto del usuario (tap en Empezar) para desbloquear el audio en mobile. */
 export function unlockAudio() {
+  if (inBackground()) return;
   try {
     if (!audioCtx) {
       const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -31,6 +50,7 @@ function tone(freq: number, startAt: number, duration: number, volume = 0.35) {
 
 /** Beep corto para la cuenta regresiva 3-2-1. */
 export function countdownBeep() {
+  if (inBackground()) return;
   unlockAudio();
   if (!audioCtx) return;
   tone(660, audioCtx.currentTime, 0.15);
@@ -38,6 +58,7 @@ export function countdownBeep() {
 
 /** Beep largo doble para el cambio de etapa. */
 export function stageBeep() {
+  if (inBackground()) return;
   unlockAudio();
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
@@ -47,6 +68,7 @@ export function stageBeep() {
 
 /** Melodía de fin. */
 export function finishBeep() {
+  if (inBackground()) return;
   unlockAudio();
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
