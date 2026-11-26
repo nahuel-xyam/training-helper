@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MdPictureInPictureAlt } from "react-icons/md";
+import { MdBubbleChart, MdPictureInPictureAlt, MdStayCurrentPortrait } from "react-icons/md";
 import { Controls } from "./Controls";
 import { InstallBanner } from "./InstallBanner";
 import { Overview } from "./Overview";
@@ -23,6 +23,7 @@ import {
   vibrate,
 } from "@/lib/alerts";
 import { cancelScheduledPush, clearScheduledPush, hasScheduledPush, pushEnabled, schedulePush, type PushItem } from "@/lib/push";
+import { isNative, native, type NativeAction, type NativeInfo, type NativeStage } from "@/lib/native";
 import { loadWorkout } from "@/lib/storage";
 import { formatSpeed, formatTime, KIND_STYLES, type TimelineStage } from "@/lib/workout";
 
@@ -38,6 +39,9 @@ export function TrainingApp() {
     notificationsSupported() ? Notification.permission : "unsupported"
   );
   const [toast, setToast] = useState<string | null>(null);
+  // Dentro del APK de Android: notificaciones, alarmas y burbuja las maneja el lado nativo.
+  const [isApp] = useState(isNative);
+  const [nativeInfo, setNativeInfo] = useState<NativeInfo | null>(null);
   // Hay notificaciones push (OneSignal) programadas: entonces no mostramos las locales para no duplicar.
   const [pushActive, setPushActive] = useState(hasScheduledPush);
 
@@ -58,7 +62,7 @@ export function TrainingApp() {
 
   const stageTitle = (t: TimelineStage) => `${t.cycle ? `Ciclo ${t.cycle}/${workout.cycles} · ` : ""}${t.stage.name}`;
   const stageBody = (t: TimelineStage) => `${formatSpeed(t.stage)} durante ${formatTime(t.stage.durationSec)}`;
-  const localNotifications = notificationsOn && !pushActive;
+  const localNotifications = notificationsOn && !pushActive && !isApp;
 
   const timer = useWorkoutTimer(workout, {
     onStageChange: (t) => {
@@ -107,6 +111,12 @@ export function TrainingApp() {
   };
 
   const askPermission = async (): Promise<boolean> => {
+    if (isApp) {
+      const r = await native.notificationPermission(true);
+      setPermission(r);
+      if (r === "denied") showToast("Notificaciones bloqueadas: habilitalas en Ajustes → Apps → Training Helper.");
+      return r === "granted";
+    }
     const result = await requestNotificationPermission();
     setPermission(result);
     if (result === "unsupported") showToast("Este navegador no soporta notificaciones. En iPhone instalá la app primero.");
@@ -128,6 +138,23 @@ export function TrainingApp() {
     setPushActive(await schedulePush(items));
   };
 
+  /** Manda al APK el cronograma de las etapas que faltan (horas de fin reales). */
+  const syncNative = async (anchorMs: number, fromElapsed: number, speed: number, paused = false, alerts = notificationsOn) => {
+    if (!isApp) return;
+    const stages: NativeStage[] = timer.timeline
+      .filter((t) => t.endSec > fromElapsed)
+      .map((t) => ({
+        name: t.stage.name,
+        chip: t.cycle ? `Ciclo ${t.cycle}/${workout.cycles}` : KIND_STYLES[t.stage.kind].label,
+        speed: formatSpeed(t.stage),
+        color: KIND_STYLES[t.stage.kind].color,
+        endAt: Math.round(anchorMs + ((t.endSec - fromElapsed) / speed) * 1000),
+        durationMs: Math.round((t.stage.durationSec / speed) * 1000),
+      }));
+    await native.start(workout.name, stages, alerts);
+    if (paused) await native.pause();
+  };
+
   const cancelPush = () => {
     setPushActive(false);
     void cancelScheduledPush();
@@ -137,11 +164,13 @@ export function TrainingApp() {
     if (notificationsOn) {
       update({ notifications: false });
       cancelPush();
+      if (active) await syncNative(Date.now(), timer.elapsed, timer.speed, timer.status === "paused", false);
       return;
     }
     const ok = await askPermission();
     update({ notifications: ok });
     if (ok && timer.status === "running") await schedulePushFrom(Date.now(), timer.elapsed, timer.speed);
+    if (active) await syncNative(Date.now(), timer.elapsed, timer.speed, timer.status === "paused", ok);
   };
 
   const handleStart = async () => {
@@ -152,19 +181,22 @@ export function TrainingApp() {
     // Pedimos permiso aprovechando el gesto del usuario (por default está activado).
     let granted = permission === "granted";
     if (settings.notifications && permission === "default") granted = await askPermission();
-    if (settings.notifications && granted) await schedulePushFrom(startedAt, 0, speed);
+    if (isApp) await syncNative(startedAt, 0, speed, false, settings.notifications && granted);
+    else if (settings.notifications && granted) await schedulePushFrom(startedAt, 0, speed);
   };
 
   const handlePause = () => {
     timer.pause();
     cancelPush();
+    if (isApp) void native.pause();
   };
 
   const handleResume = () => {
     const resumedAt = Date.now();
     const elapsed = timer.elapsed;
     timer.resume();
-    if (notificationsOn) void schedulePushFrom(resumedAt, elapsed, timer.speed);
+    if (isApp) void syncNative(resumedAt, elapsed, timer.speed);
+    else if (notificationsOn) void schedulePushFrom(resumedAt, elapsed, timer.speed);
   };
 
   const handleStop = () => {
@@ -172,6 +204,68 @@ export function TrainingApp() {
     timer.stop();
     cancelPush();
     void pip.close();
+    if (isApp) void native.stop();
+  };
+
+  // ---- APK: botones de la notificación, estado al abrir y permisos ----
+  // Los handlers se leen desde una ref para usar siempre el estado más reciente del timer.
+  const nativeHandlers = useRef<Record<NativeAction, () => void>>({ pause() {}, resume() {}, stop() {} });
+  useEffect(() => {
+    nativeHandlers.current = {
+      // El lado nativo ya aplicó la acción; acá sincronizamos el cronómetro de la web.
+      pause: () => timer.pause(),
+      resume: () => {
+        const at = Date.now();
+        const elapsed = timer.elapsed;
+        timer.resume();
+        void syncNative(at, elapsed, timer.speed);
+      },
+      stop: () => {
+        timer.stop();
+        void pip.close();
+      },
+    };
+  });
+
+  const resyncRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    resyncRef.current = () => {
+      if (timer.status === "running" || timer.status === "paused") {
+        void syncNative(Date.now(), timer.elapsed, timer.speed, timer.status === "paused");
+      }
+    };
+  });
+
+  useEffect(() => {
+    if (!isApp) return;
+    const refreshInfo = () => void native.getInfo().then(setNativeInfo);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshInfo();
+    };
+    refreshInfo();
+    void native.notificationPermission().then(setPermission);
+    // Acción tocada en la notificación mientras la web no estaba; si no hay, re-sincronizamos.
+    void native.takePendingAction().then((a) => {
+      if (a) nativeHandlers.current[a]();
+      else resyncRef.current();
+    });
+    const off = native.onAction((a) => nativeHandlers.current[a]());
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      off();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isApp]);
+
+  const toggleBubble = async () => {
+    if (!nativeInfo) return;
+    if (!nativeInfo.canDrawOverlays) {
+      showToast("Activá \"Mostrar sobre otras apps\" para Training Helper y volvé a la app.");
+      await native.openOverlaySettings();
+      return;
+    }
+    await native.setBubble(!nativeInfo.bubbleEnabled);
+    setNativeInfo(await native.getInfo());
   };
 
   const bg = timer.current ? KIND_STYLES[timer.current.stage.kind].bg : "transparent";
@@ -218,7 +312,29 @@ export function TrainingApp() {
         <div className="flex flex-col items-center gap-3">
           <Controls status={timer.status} onStart={() => void handleStart()} onPause={handlePause} onResume={handleResume} onStop={handleStop} />
           <div className="flex min-h-8 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-            {active && pip.supported && (
+            {active && isApp && nativeInfo && (
+              <button
+                type="button"
+                onClick={() => void toggleBubble()}
+                className={`flex items-center gap-2 rounded-full border px-3.5 py-[7px] text-base font-medium transition-colors active:scale-95 ${
+                  nativeInfo.canDrawOverlays && nativeInfo.bubbleEnabled ? "border-fg/30 bg-fg/15 text-fg" : "border-fg/15 bg-fg/[0.05] text-fg/75"
+                }`}
+              >
+                <MdBubbleChart size={21} />
+                {!nativeInfo.canDrawOverlays ? "Activar burbuja flotante" : nativeInfo.bubbleEnabled ? "Burbuja: sí" : "Burbuja: no"}
+              </button>
+            )}
+            {active && isApp && nativeInfo?.supportsPromotion && !nativeInfo.canPromote && (
+              <button
+                type="button"
+                onClick={() => void native.openPromotionSettings()}
+                className="flex items-center gap-2 rounded-full border border-fg/15 bg-fg/[0.05] px-3.5 py-[7px] text-base font-medium text-fg/75 active:scale-95"
+              >
+                <MdStayCurrentPortrait size={21} />
+                Timer en la barra de estado
+              </button>
+            )}
+            {active && !isApp && pip.supported && (
               <button
                 type="button"
                 onClick={() => void togglePip()}

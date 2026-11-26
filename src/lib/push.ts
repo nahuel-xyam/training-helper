@@ -4,6 +4,8 @@
 // Ojo: la REST API key viaja en el bundle público. Usar una app de OneSignal exclusiva para esto
 // (el único suscripto es el dueño), así lo peor que puede pasar es que alguien te mande spam.
 
+import { isNative } from "./native";
+
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ?? "";
 const REST_KEY = process.env.NEXT_PUBLIC_ONESIGNAL_REST_KEY ?? "";
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -37,7 +39,9 @@ export function pushEnabled(): boolean {
     !!REST_KEY &&
     process.env.NODE_ENV === "production" &&
     typeof window !== "undefined" &&
-    window.location.protocol === "https:"
+    window.location.protocol === "https:" &&
+    // En el APK los avisos los hacen alarmas nativas
+    !isNative()
   );
 }
 

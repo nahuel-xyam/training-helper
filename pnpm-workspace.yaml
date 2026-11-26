@@ -1,3 +1,7 @@
 allowBuilds:
   sharp: false
   unrs-resolver: false
+minimumReleaseAgeExclude:
+  - '@capacitor/core@8.6.3'
+  - '@capacitor/cli@8.6.3'
+  - '@capacitor/android@8.6.3'

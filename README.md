@@ -32,3 +32,38 @@ Configuración única: **Settings → Pages → Source: GitHub Actions**.
 
 - Las notificaciones en iPhone solo funcionan con la app instalada (Compartir → Agregar a inicio, iOS 16.4+).
 - No hay servidor de push: si el sistema congela la pestaña (pantalla bloqueada), los avisos pueden demorarse. Por eso existe el toggle "pantalla siempre encendida" (Wake Lock).
+
+## APK de Android
+
+El APK (Capacitor) carga la misma interfaz desde GitHub Pages y suma funciones nativas
+(`android/app/src/main/java/dev/xyam/traininghelper/timer/`):
+
+- **Notificación fija** con la cuenta regresiva de la etapa y botones Pausa/Seguir/Parar.
+  En Android 16 se pide como *Live Update*: el timer aparece en la barra de estado.
+- **Avisos de etapa** con alarmas exactas del sistema (sin internet, aunque la app esté cerrada).
+- **Burbuja flotante** arrastrable con el timer sobre otras apps (permiso "Mostrar sobre otras apps").
+
+Los cambios de interfaz llegan solos (vía GitHub Pages). Solo hace falta un APK nuevo cuando
+cambia el código nativo.
+
+### Publicar una versión
+
+```bash
+git tag apk-v1.0.1 && git push origin apk-v1.0.1
+```
+
+El workflow `.github/workflows/android.yml` compila, firma y publica `TrainingHelper-1.0.1.apk`
+en Releases. Necesita los secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
+
+### Compilar localmente
+
+Requiere JDK 21 y el SDK de Android (plataforma 36).
+
+```bash
+pnpm build && pnpm exec cap sync android
+cd android && ./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+```
+
+La clave de firma **no** está en el repo. Guardala bien: sin ella no se pueden publicar
+actualizaciones que se instalen encima de la versión anterior.

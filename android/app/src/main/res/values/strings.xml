@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Training Helper</string>
+    <string name="title_activity_main">Training Helper</string>
+    <string name="package_name">dev.xyam.traininghelper</string>
+    <string name="custom_url_scheme">dev.xyam.traininghelper</string>
+</resources>
