@@ -30,7 +30,7 @@ export type PipSnapshot = {
 // (para achicar/agrandar toda la ventana flotante basta con cambiar SCALE).
 const W = 480;
 const H = 238;
-const SCALE = 0.75;
+const SCALE = 0.5625; // 0.75 × 0.75
 
 type WebkitVideo = HTMLVideoElement & {
   webkitSupportsPresentationMode?: (mode: string) => boolean;
