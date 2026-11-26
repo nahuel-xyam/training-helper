@@ -41,6 +41,8 @@ function Toggle({ on, onClick, label, IconOn, IconOff, disabled }: ToggleProps) 
 type Props = {
   notificationsOn: boolean;
   soundOn: boolean;
+  /** sonido silenciado automáticamente (ventana flotante abierta) */
+  soundLocked?: boolean;
   vibrationOn: boolean;
   wakeLockOn: boolean;
   canVibrate: boolean;
@@ -60,7 +62,14 @@ export function TopBar(p: Props) {
     <header className="flex items-center justify-between gap-2 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-2">
       <div className="flex gap-1.5">
         <Toggle on={p.notificationsOn} onClick={p.onToggleNotifications} label="Notificaciones" IconOn={MdNotificationsActive} IconOff={MdNotificationsOff} />
-        <Toggle on={p.soundOn} onClick={p.onToggleSound} label="Sonido" IconOn={MdVolumeUp} IconOff={MdVolumeOff} />
+        <Toggle
+          on={p.soundOn}
+          onClick={p.onToggleSound}
+          label={p.soundLocked ? "Sonido (silenciado por la ventana flotante)" : "Sonido"}
+          IconOn={MdVolumeUp}
+          IconOff={MdVolumeOff}
+          disabled={p.soundLocked}
+        />
         <Toggle on={p.vibrationOn && p.canVibrate} onClick={p.onToggleVibration} label="Vibración" IconOn={MdVibration} disabled={!p.canVibrate} />
         <Toggle on={p.wakeLockOn && p.canWakeLock} onClick={p.onToggleWakeLock} label="Pantalla siempre encendida" IconOn={MdStayCurrentPortrait} disabled={!p.canWakeLock} />
       </div>

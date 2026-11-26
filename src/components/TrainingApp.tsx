@@ -50,22 +50,28 @@ export function TrainingApp() {
     window.setTimeout(() => setToast(null), 3500);
   };
 
+  // Ventana flotante (Picture-in-Picture). Mientras está abierta no suenan los beeps:
+  // en Android hacen que YouTube (u otra app de video) se pause.
+  const pipSnapshot = useRef<PipSnapshot | null>(null);
+  const pip = usePictureInPicture(pipSnapshot);
+  const soundOn = settings.sound && !pip.active;
+
   const stageTitle = (t: TimelineStage) => `${t.cycle ? `Ciclo ${t.cycle}/${workout.cycles} · ` : ""}${t.stage.name}`;
   const stageBody = (t: TimelineStage) => `${formatSpeed(t.stage)} durante ${formatTime(t.stage.durationSec)}`;
   const localNotifications = notificationsOn && !pushActive;
 
   const timer = useWorkoutTimer(workout, {
     onStageChange: (t) => {
-      if (settings.sound) stageBeep();
+      if (soundOn) stageBeep();
       if (settings.vibration) vibrate([400, 150, 400]);
       if (localNotifications) void notify(stageTitle(t), stageBody(t));
     },
     onCountdown: () => {
-      if (settings.sound) countdownBeep();
+      if (soundOn) countdownBeep();
       if (settings.vibration) vibrate(120);
     },
     onFinish: (total) => {
-      if (settings.sound) finishBeep();
+      if (soundOn) finishBeep();
       if (settings.vibration) vibrate([300, 100, 300, 100, 600]);
       if (localNotifications) void notify("¡Entrenamiento terminado! 🎉", `Tiempo total ${formatTime(total)}`);
       clearScheduledPush();
@@ -78,7 +84,6 @@ export function TrainingApp() {
 
   // Ventana flotante (Picture-in-Picture): le pasamos un snapshot con su marca de tiempo
   // y ella calcula la etapa y la cuenta regresiva por su cuenta.
-  const pipSnapshot = useRef<PipSnapshot | null>(null);
   useEffect(() => {
     pipSnapshot.current = {
       timeline: timer.timeline,
@@ -92,7 +97,6 @@ export function TrainingApp() {
       at: Date.now(),
     };
   });
-  const pip = usePictureInPicture(pipSnapshot);
 
   const togglePip = async () => {
     if (pip.active) {
@@ -176,7 +180,8 @@ export function TrainingApp() {
     <div className="flex min-h-dvh flex-col transition-colors duration-700" style={{ background: `linear-gradient(to bottom, ${bg}, transparent 60%)` }}>
       <TopBar
         notificationsOn={notificationsOn}
-        soundOn={settings.sound}
+        soundOn={soundOn}
+        soundLocked={pip.active}
         vibrationOn={settings.vibration}
         wakeLockOn={settings.wakeLock}
         canVibrate={vibrationAvailable}
