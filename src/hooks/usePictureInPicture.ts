@@ -26,9 +26,11 @@ export type PipSnapshot = {
   at: number;
 };
 
-// Proporción ~2:1. El tamaño real de la ventana lo decide Android; acá definimos la proporción y el contenido.
+// Proporción ~2:1. El diseño está en W x H y se dibuja escalado por SCALE
+// (para achicar/agrandar toda la ventana flotante basta con cambiar SCALE).
 const W = 480;
 const H = 238;
+const SCALE = 0.75;
 
 type WebkitVideo = HTMLVideoElement & {
   webkitSupportsPresentationMode?: (mode: string) => boolean;
@@ -72,6 +74,8 @@ function draw(ctx: CanvasRenderingContext2D, snap: PipSnapshot, fonts: { sans: s
   };
   const remaining = t ? Math.max(0, t.endSec - elapsed) : 0;
   const progress = t ? Math.min(1, (elapsed - t.startSec) / t.stage.durationSec) : 1;
+
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
 
   // Fondo: color de la etapa oscurecido
   ctx.fillStyle = "#0b0b0f";
@@ -144,8 +148,8 @@ export function usePictureInPicture(snapshotRef: RefObject<PipSnapshot | null>) 
   const ensureElements = useCallback(() => {
     if (els.current) return els.current;
     const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = Math.round(W * SCALE);
+    canvas.height = Math.round(H * SCALE);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     const video = document.createElement("video") as WebkitVideo;
