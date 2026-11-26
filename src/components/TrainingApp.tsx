@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MdPictureInPictureAlt } from "react-icons/md";
 import { Controls } from "./Controls";
 import { InstallBanner } from "./InstallBanner";
 import { Overview } from "./Overview";
 import { StageCard } from "./StageCard";
 import { TopBar } from "./TopBar";
+import { usePictureInPicture, type PipSnapshot } from "@/hooks/usePictureInPicture";
 import { useSettings } from "@/hooks/useSettings";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { useWorkoutTimer } from "@/hooks/useWorkoutTimer";
@@ -74,6 +76,32 @@ export function TrainingApp() {
   const active = timer.status === "running" || timer.status === "paused";
   useWakeLock(settings.wakeLock && timer.status === "running");
 
+  // Ventana flotante (Picture-in-Picture): le pasamos un snapshot con su marca de tiempo
+  // y ella calcula la etapa y la cuenta regresiva por su cuenta.
+  const pipSnapshot = useRef<PipSnapshot | null>(null);
+  useEffect(() => {
+    pipSnapshot.current = {
+      timeline: timer.timeline,
+      cycles: workout.cycles,
+      elapsed: timer.elapsed,
+      total: timer.total,
+      running: timer.status === "running",
+      paused: timer.status === "paused",
+      finished: timer.status === "finished",
+      speed: timer.speed,
+      at: Date.now(),
+    };
+  });
+  const pip = usePictureInPicture(pipSnapshot);
+
+  const togglePip = async () => {
+    if (pip.active) {
+      await pip.close();
+      return;
+    }
+    if (!(await pip.open())) showToast("No se pudo abrir la ventana flotante en este navegador.");
+  };
+
   const askPermission = async (): Promise<boolean> => {
     const result = await requestNotificationPermission();
     setPermission(result);
@@ -139,6 +167,7 @@ export function TrainingApp() {
     if (!window.confirm("¿Terminar el entrenamiento?")) return;
     timer.stop();
     cancelPush();
+    void pip.close();
   };
 
   const bg = timer.current ? KIND_STYLES[timer.current.stage.kind].bg : "transparent";
@@ -183,7 +212,19 @@ export function TrainingApp() {
 
         <div className="flex flex-col items-center gap-3">
           <Controls status={timer.status} onStart={() => void handleStart()} onPause={handlePause} onResume={handleResume} onStop={handleStop} />
-          <div className="flex h-6 items-center gap-3 text-sm">
+          <div className="flex min-h-8 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
+            {active && pip.supported && (
+              <button
+                type="button"
+                onClick={() => void togglePip()}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors active:scale-95 ${
+                  pip.active ? "border-fg/30 bg-fg/15 text-fg" : "border-fg/15 bg-fg/[0.05] text-fg/75"
+                }`}
+              >
+                <MdPictureInPictureAlt size={18} />
+                {pip.active ? "Cerrar ventana flotante" : "Ventana flotante"}
+              </button>
+            )}
             {timer.status === "paused" && <p className="animate-pulse font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-300">En pausa</p>}
             {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-600 dark:text-fuchsia-300">Modo prueba ×{timer.speed}</p>}
           </div>
