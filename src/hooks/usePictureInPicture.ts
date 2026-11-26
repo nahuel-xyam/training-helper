@@ -27,12 +27,13 @@ export type PipSnapshot = {
 };
 
 // El tamaño de la ventana lo decide Android: fija el alto (mínimo ~108dp) y el ancho sale de
-// la proporción. Por eso lo que achica la ventana es la PROPORCIÓN (acá 1,4:1), no la resolución.
+// la proporción (en Samsung mantiene el área ~constante). Lo que cambia la forma es la PROPORCIÓN
+// (acá 1,8:1), no la resolución.
 // SCALE solo sube la resolución del dibujo para que se vea nítido.
-const W = 280;
-const H = 200;
+const W = 324;
+const H = 180;
 const SCALE = 2;
-const PAD = 16;
+const PAD = 18;
 
 type WebkitVideo = HTMLVideoElement & {
   webkitSupportsPresentationMode?: (mode: string) => boolean;
@@ -98,30 +99,30 @@ function draw(ctx: CanvasRenderingContext2D, snap: PipSnapshot, fonts: { sans: s
   const maxW = W - PAD * 2;
 
   // Fila superior: chip y velocidad
-  ctx.font = `700 15px ${fonts.sans}`;
+  ctx.font = `700 12px ${fonts.sans}`;
   ctx.textAlign = "left";
-  ctx.fillText(s.chip.toUpperCase(), PAD, 32, s.speedText ? maxW * 0.5 : maxW);
+  ctx.fillText(s.chip.toUpperCase(), PAD, 30, s.speedText ? maxW * 0.5 : maxW);
   if (s.speedText) {
     ctx.textAlign = "right";
-    ctx.fillText(s.speedText, W - PAD, 32, maxW * 0.48);
+    ctx.fillText(s.speedText, W - PAD, 30, maxW * 0.48);
   }
 
   // Cuenta regresiva
   const secs = Math.ceil(remaining);
   const text = s.finished ? "00:00" : `${pad(Math.floor(secs / 60))}:${pad(secs % 60)}`;
   ctx.textAlign = "center";
-  ctx.font = `800 66px ${fonts.mono}`;
-  ctx.fillText(text, W / 2, 112, maxW);
+  ctx.font = `800 54px ${fonts.mono}`;
+  ctx.fillText(text, W / 2, 100, maxW);
 
   // Nombre de la etapa (o pausa)
-  ctx.font = `700 19px ${fonts.sans}`;
-  ctx.fillText(s.paused ? `⏸ En pausa · ${s.title}` : s.title, W / 2, 146, maxW);
+  ctx.font = `700 15px ${fonts.sans}`;
+  ctx.fillText(s.paused ? `⏸ En pausa · ${s.title}` : s.title, W / 2, 128, maxW);
 
   // Barra de avance
   ctx.fillStyle = "rgba(255,255,255,0.25)";
-  roundRect(ctx, PAD, 166, maxW, 8, 4);
+  roundRect(ctx, PAD, 148, maxW, 6, 3);
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, PAD, 166, Math.max(8, maxW * progress), 8, 4);
+  roundRect(ctx, PAD, 148, Math.max(6, maxW * progress), 6, 3);
 }
 
 export function usePictureInPicture(snapshotRef: RefObject<PipSnapshot | null>) {
