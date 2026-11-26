@@ -4,7 +4,7 @@ import { KIND_STYLES, type TimelineStage } from "@/lib/workout";
 export function Timeline({ timeline, index, total }: { timeline: TimelineStage[]; index: number; total: number }) {
   if (!total) return null;
   return (
-    <div className="mx-4 flex h-3 gap-0.5" aria-hidden>
+    <div className="flex h-4 gap-1" aria-hidden>
       {timeline.map((t) => {
         const style = KIND_STYLES[t.stage.kind];
         const done = index > t.index;

@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 /* El tema se elige con data-theme en <html> ("dark" por default, "light" opcional). */
+/* Pantallas bajas (celulares chicos): espaciados más compactos para que entre todo sin scroll. */
+@custom-variant short (@media (max-height: 720px));
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {

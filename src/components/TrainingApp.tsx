@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { BigClock } from "./BigClock";
 import { Controls } from "./Controls";
 import { InstallBanner } from "./InstallBanner";
-import { StageHeader } from "./StageHeader";
-import { Timeline } from "./Timeline";
+import { Overview } from "./Overview";
+import { StageCard } from "./StageCard";
 import { TopBar } from "./TopBar";
 import { useSettings } from "@/hooks/useSettings";
 import { useWakeLock } from "@/hooks/useWakeLock";
@@ -161,25 +160,32 @@ export function TrainingApp() {
       />
 
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-between gap-5 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-2">
-        <div className="flex flex-col gap-4">
-          <StageHeader
-            workout={workout}
-            current={timer.current}
-            next={timer.next}
-            stageElapsed={timer.stageElapsed}
-            stageRemaining={timer.stageRemaining}
-            finished={timer.status === "finished"}
-          />
-          <Timeline timeline={timer.timeline} index={timer.status === "finished" ? timer.timeline.length : timer.index} total={timer.total} />
-        </div>
+        {/* Resumen + card juntos, centrados en el espacio libre */}
+        <div className="flex flex-1 flex-col justify-center gap-12 pt-4 short:gap-5 short:pt-0">
+        <Overview
+          name={workout.name}
+          timeline={timer.timeline}
+          index={timer.status === "finished" ? timer.timeline.length : timer.index}
+          elapsed={timer.elapsed}
+          total={timer.total}
+        />
 
-        <BigClock elapsed={timer.elapsed} total={timer.total} />
+        <StageCard
+          workout={workout}
+          stage={timer.current ?? (timer.status === "idle" ? (timer.timeline[0] ?? null) : null)}
+          next={timer.current ? timer.next : (timer.timeline[1] ?? null)}
+          remaining={timer.current ? timer.stageRemaining : (timer.timeline[0]?.stage.durationSec ?? 0)}
+          started={!!timer.current}
+          finished={timer.status === "finished"}
+          total={timer.total}
+        />
+        </div>
 
         <div className="flex flex-col items-center gap-3">
           <Controls status={timer.status} onStart={() => void handleStart()} onPause={handlePause} onResume={handleResume} onStop={handleStop} />
           <div className="flex h-6 items-center gap-3 text-sm">
             {timer.status === "paused" && <p className="animate-pulse font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-300">En pausa</p>}
-            {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-300">Modo prueba ×{timer.speed}</p>}
+            {timer.speed !== 1 && active && <p className="text-xs text-fuchsia-600 dark:text-fuchsia-300">Modo prueba ×{timer.speed}</p>}
           </div>
         </div>
       </main>
