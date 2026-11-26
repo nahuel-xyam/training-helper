@@ -222,11 +222,11 @@ export function TrainingApp() {
               <button
                 type="button"
                 onClick={() => void togglePip()}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors active:scale-95 ${
+                className={`flex items-center gap-2 rounded-full border px-3.5 py-[7px] text-base font-medium transition-colors active:scale-95 ${
                   pip.active ? "border-fg/30 bg-fg/15 text-fg" : "border-fg/15 bg-fg/[0.05] text-fg/75"
                 }`}
               >
-                <MdPictureInPictureAlt size={18} />
+                <MdPictureInPictureAlt size={21} />
                 {pip.active ? "Cerrar ventana flotante" : "Ventana flotante"}
               </button>
             )}
