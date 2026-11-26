@@ -26,9 +26,9 @@ export type PipSnapshot = {
   at: number;
 };
 
-// Proporción ~2.3:1 (Android permite hasta 2.39:1): la ventana queda más baja.
-const W = 640;
-const H = 280;
+// Proporción ~2:1. El tamaño real de la ventana lo decide Android; acá definimos la proporción y el contenido.
+const W = 480;
+const H = 238;
 
 type WebkitVideo = HTMLVideoElement & {
   webkitSupportsPresentationMode?: (mode: string) => boolean;
@@ -90,30 +90,30 @@ function draw(ctx: CanvasRenderingContext2D, snap: PipSnapshot, fonts: { sans: s
   ctx.textBaseline = "alphabetic";
 
   // Fila superior: chip y velocidad
-  ctx.font = `700 22px ${fonts.sans}`;
+  ctx.font = `700 18px ${fonts.sans}`;
   ctx.textAlign = "left";
-  ctx.fillText(s.chip.toUpperCase(), 40, 48);
+  ctx.fillText(s.chip.toUpperCase(), 28, 40);
   if (s.speedText) {
     ctx.textAlign = "right";
-    ctx.fillText(s.speedText, W - 40, 48);
+    ctx.fillText(s.speedText, W - 28, 40);
   }
 
   // Cuenta regresiva
   const secs = Math.ceil(remaining);
   const text = s.finished ? "00:00" : `${pad(Math.floor(secs / 60))}:${pad(secs % 60)}`;
   ctx.textAlign = "center";
-  ctx.font = `800 118px ${fonts.mono}`;
-  ctx.fillText(text, W / 2, 168);
+  ctx.font = `800 88px ${fonts.mono}`;
+  ctx.fillText(text, W / 2, 138);
 
   // Nombre de la etapa (o pausa)
-  ctx.font = `700 28px ${fonts.sans}`;
-  ctx.fillText(s.paused ? `⏸ En pausa · ${s.title}` : s.title, W / 2, 214);
+  ctx.font = `700 23px ${fonts.sans}`;
+  ctx.fillText(s.paused ? `⏸ En pausa · ${s.title}` : s.title, W / 2, 176);
 
   // Barra de avance
   ctx.fillStyle = "rgba(255,255,255,0.25)";
-  roundRect(ctx, 40, 240, W - 80, 10, 5);
+  roundRect(ctx, 28, 200, W - 56, 8, 4);
   ctx.fillStyle = "#ffffff";
-  roundRect(ctx, 40, 240, Math.max(10, (W - 80) * progress), 10, 5);
+  roundRect(ctx, 28, 200, Math.max(8, (W - 56) * progress), 8, 4);
 }
 
 export function usePictureInPicture(snapshotRef: RefObject<PipSnapshot | null>) {
